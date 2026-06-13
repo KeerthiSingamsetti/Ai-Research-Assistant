@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Research Assistant — Tester</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      color: #7c3aed;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3147;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #a78bfa;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Upload Area */
+    .upload-area {
+      border: 2px dashed #3d4166;
+      border-radius: 10px;
+      padding: 36px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #7c3aed;
+      background: #1a1d2e;
+    }
+    .upload-area p { color: #64748b; font-size: 0.95rem; margin-top: 8px; }
+    .upload-area .icon { font-size: 2.5rem; }
+
+    input[type="file"] { display: none; }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #7c3aed; color: #fff; }
+    .btn-danger  { background: #dc2626; color: #fff; }
+    .btn-sm      { padding: 6px 14px; font-size: 0.82rem; }
+
+    /* Status Badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-green  { background: #14532d; color: #4ade80; }
+    .badge-yellow { background: #713f12; color: #fbbf24; }
+    .badge-red    { background: #450a0a; color: #f87171; }
+
+    /* Loader */
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: #7c3aed;
+      font-size: 0.95rem;
+    }
+    .loader.active { display: block; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #2d3147;
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result Box */
+    .result-box {
+      background: #11131d;
+      border: 1px solid #2d3147;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .result-row { display: flex; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+    .result-label { color: #64748b; min-width: 130px; font-size: 0.82rem; }
+    .result-value { color: #e2e8f0; word-break: break-all; }
+
+    /* Chunks */
+    .chunk-card {
+      background: #11131d;
+      border: 1px solid #2d3147;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .chunk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chunk-title { font-weight: 600; color: #a78bfa; font-size: 0.9rem; }
+    .chunk-meta  { font-size: 0.78rem; color: #64748b; }
+    .chunk-section { font-size: 0.8rem; color: #38bdf8; margin-bottom: 6px; }
+    .chunk-text {
+      font-size: 0.83rem;
+      color: #cbd5e1;
+      max-height: 100px;
+      overflow-y: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      background: #0f1117;
+      border-radius: 6px;
+      padding: 8px;
+    }
+
+    /* Doc list */
+    .doc-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #2d3147;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .doc-item:last-child { border-bottom: none; }
+    .doc-name { font-weight: 600; font-size: 0.9rem; }
+    .doc-sub  { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+    .doc-actions { display: flex; gap: 8px; }
+
+    /* Alert */
+    .alert {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      margin-top: 12px;
+    }
+    .alert-success { background: #14532d; color: #4ade80; border: 1px solid #166534; }
+    .alert-error   { background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; }
+    .alert-info    { background: #1e3a5f; color: #93c5fd; border: 1px solid #1d4ed8; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<h1>🔬 AI Research Assistant</h1>
+<p class="subtitle">Member 1 — Backend Tester &nbsp;|&nbsp; Connected to http://127.0.0.1:8000</p>
+
+<!-- Upload Section -->
+<div class="card">
+  <h2>📤 Upload PDF Document</h2>
+  <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="icon">📄</div>
+    <p><strong>Click to choose a PDF</strong> or drag & drop here</p>
+    <p>Maximum file size: 50MB</p>
+  </div>
+  <input type="file" id="fileInput" accept=".pdf" onchange="handleUpload(this.files[0])"/>
+  <div class="loader" id="uploadLoader">
+    <div class="spinner"></div>
+    Parsing PDF and generating chunks...
+  </div>
+  <div id="uploadResult" class="hidden"></div>
+</div>
+
+<!-- Upload Response -->
+<div class="card hidden" id="uploadResponseCard">
+  <h2>✅ Upload Result</h2>
+  <div class="result-box" id="uploadResponse"></div>
+</div>
+
+<!-- Chunks Section -->
+<div class="card hidden" id="chunksCard">
+  <h2>🧩 Extracted Chunks</h2>
+  <div id="chunksContainer"></div>
+</div>
+
+<!-- All Documents -->
+<div class="card" id="docsCard">
+  <h2>📚 All Uploaded Documents <button class="btn btn-sm btn-primary" onclick="loadDocuments()" style="margin-left:10px">Refresh</button></h2>
+  <div id="docsList"><p style="color:#64748b;font-size:0.9rem">Loading...</p></div>
+</div>
+
+<script>
+  const BASE = "http://127.0.0.1:8000";
+
+  // ── Drag & Drop ──────────────────────────────────────────────
+  const dropZone = document.getElementById("dropZone");
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".pdf")) handleUpload(file);
+    else showAlert("uploadResult", "Only PDF files are allowed.", "error");
+  });
+
+  // ── Upload Handler ───────────────────────────────────────────
+  async function handleUpload(file) {
+    if (!file) return;
+
+    document.getElementById("uploadLoader").classList.add("active");
+    document.getElementById("uploadResponseCard").classList.add("hidden");
+    document.getElementById("chunksCard").classList.add("hidden");
+    document.getElementById("uploadResult").classList.add("hidden");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${BASE}/api/v1/documents/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      document.getElementById("uploadLoader").classList.remove("active");
+
+      if (res.status === 201) {
+        renderUploadResponse(data);
+        await loadChunks(data.document_id);
+        await loadDocuments();
+      } else if (res.status === 409) {
+        showAlert("uploadResult", `⚠️ Duplicate detected! This file already exists. Document ID: ${data.existing_doc_id}`, "info");
+        document.getElementById("uploadResult").classList.remove("hidden");
+        await loadChunks(data.existing_doc_id);
+        await loadDocuments();
+      } else {
+        showAlert("uploadResult", `❌ Error: ${data.detail || data.error}`, "error");
+        document.getElementById("uploadResult").classList.remove("hidden");
+      }
+    } catch (e) {
+      document.getElementById("uploadLoader").classList.remove("active");
+      showAlert("uploadResult", `❌ Could not reach server. Is it running?`, "error");
+      document.getElementById("uploadResult").classList.remove("hidden");
+    }
+  }
+
+  function renderUploadResponse(data) {
+    const card = document.getElementById("uploadResponseCard");
+    const box  = document.getElementById("uploadResponse");
+    card.classList.remove("hidden");
+
+    const statusBadge = data.status === "processed"
+      ? `<span class="badge badge-green">${data.status}</span>`
+      : `<span class="badge badge-red">${data.status}</span>`;
+
+    box.innerHTML = `
+      <div class="result-row"><span class="result-label">Document ID</span><span class="result-value">${data.document_id}</span></div>
+      <div class="result-row"><span class="result-label">Filename</span><span class="result-value">${data.filename}</span></div>
+      <div class="result-row"><span class="result-label">Pages</span><span class="result-value">${data.page_count}</span></div>
+      <div class="result-row"><span class="result-label">Chunks Generated</span><span class="result-value">${data.chunk_count}</span></div>
+      <div class="result-row"><span class="result-label">Status</span><span class="result-value">${statusBadge}</span></div>
+      <div class="result-row"><span class="result-label">Message</span><span class="result-value">${data.message}</span></div>
+    `;
+  }
+
+  // ── Load Chunks ──────────────────────────────────────────────
+  async function loadChunks(docId) {
+    const res  = await fetch(`${BASE}/api/v1/documents/${docId}/chunks`);
+    const data = await res.json();
+    const card = document.getElementById("chunksCard");
+    const box  = document.getElementById("chunksContainer");
+    card.classList.remove("hidden");
+
+    box.innerHTML = `<p style="color:#64748b;font-size:0.85rem;margin-bottom:14px">Total chunks: <strong style="color:#a78bfa">${data.total_chunks}</strong></p>`;
+
+    data.chunks.forEach(chunk => {
+      box.innerHTML += `
+        <div class="chunk-card">
+          <div class="chunk-header">
+            <span class="chunk-title">Chunk ${chunk.chunk_index}</span>
+            <span class="chunk-meta">Page ${chunk.page_number} &nbsp;|&nbsp; ${chunk.char_count} chars</span>
+          </div>
+          ${chunk.section_title ? `<div class="chunk-section">📌 Section: ${chunk.section_title}</div>` : ""}
+          <div class="chunk-text">${chunk.text}</div>
+        </div>
+      `;
+    });
+  }
+
+  // ── Load All Documents ───────────────────────────────────────
+  async function loadDocuments() {
+    try {
+      const res  = await fetch(`${BASE}/api/v1/documents/`);
+      const docs = await res.json();
+      const box  = document.getElementById("docsList");
+
+      if (docs.length === 0) {
+        box.innerHTML = `<p style="color:#64748b;font-size:0.9rem">No documents uploaded yet.</p>`;
+        return;
+      }
+
+      box.innerHTML = docs.map(doc => `
+        <div class="doc-item">
+          <div>
+            <div class="doc-name">📄 ${doc.filename}</div>
+            <div class="doc-sub">ID: ${doc.document_id} &nbsp;|&nbsp; ${doc.page_count} pages &nbsp;|&nbsp; ${doc.chunk_count} chunks &nbsp;|&nbsp;
+              <span class="badge ${doc.status === 'processed' ? 'badge-green' : 'badge-red'}">${doc.status}</span>
+            </div>
+          </div>
+          <div class="doc-actions">
+            <button class="btn btn-sm btn-primary" onclick="loadChunks('${doc.document_id}');document.getElementById('chunksCard').scrollIntoView({behavior:'smooth'})">View Chunks</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteDoc('${doc.document_id}', this)">Delete</button>
+          </div>
+        </div>
+      `).join("");
+    } catch(e) {
+      document.getElementById("docsList").innerHTML = `<p style="color:#f87171;font-size:0.9rem">Server not reachable.</p>`;
+    }
+  }
+
+  // ── Delete Document ──────────────────────────────────────────
+  async function deleteDoc(docId, btn) {
+    if (!confirm("Delete this document and all its chunks?")) return;
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
+    await fetch(`${BASE}/api/v1/documents/${docId}`, { method: "DELETE" });
+    await loadDocuments();
+    document.getElementById("chunksCard").classList.add("hidden");
+    document.getElementById("uploadResponseCard").classList.add("hidden");
+  }
+
+  // ── Alert Helper ─────────────────────────────────────────────
+  function showAlert(containerId, msg, type) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    el.classList.remove("hidden");
+  }
+
+  // Load docs on page open
+  loadDocuments();
+</script>
+</body>
+</html>
