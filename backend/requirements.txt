@@ -9,3 +9,7 @@ pdfplumber
 aiofiles
 python-multipart
 httpx
+sentence-transformers
+faiss-cpu
+rank-bm25
+
