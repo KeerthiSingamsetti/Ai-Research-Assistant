@@ -8,7 +8,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.config import settings
 from backend.database.db import init_db
 from backend.api.routes.documents import router as documents_router
+
 from backend.utils.logger import setup_logger
+
+from backend.api.routes.search import router as search_router
+from backend.services.index_builder import build_index
+
 
 logger = setup_logger("main")
 
@@ -31,15 +36,32 @@ app.add_middleware(
 # 2. Startup event to initialize SQLite DB
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Startup handler to initialize database schema."""
-    logger.info("Application starting up. Initializing database...")
-    try:
-        await init_db()
-        logger.info("Database schema initialized successfully.")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {str(e)}")
-        raise e
 
+    logger.info(
+        "Application starting up. Initializing database..."
+    )
+
+    try:
+
+        await init_db()
+
+        logger.info(
+            "Database schema initialized successfully."
+        )
+
+        await build_index()
+
+        logger.info(
+            "Retrieval indexes built successfully (FAISS + BM25)."
+        )
+
+    except Exception as e:
+
+        logger.error(
+            f"Startup failed: {str(e)}"
+        )
+
+        raise e
 # 3. Mount routers under /api/v1
 # This mounts documents_router (which has prefix /documents) under /api/v1
 # Making the endpoints accessible at /api/v1/documents/...
@@ -77,13 +99,28 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
     )
 
 # 5. Root level health check GET /health -> {"status": "ok"}
+'''
 @app.get("/health", tags=["health"])
 async def root_health() -> Dict[str, str]:
     """Root-level health check endpoint."""
-    return {"status": "ok"}
+    return {"status": "ok"}   
+'''
+@app.get("/health")
+async def root():
+    return {
+        "message": "AI Research Assistant Backend Running",
+        "docs": "/docs",
+        "health": "/health",
+        "status": "ok"
+    }
 
 # GET /api/v1/health fallback returning version
 @app.get("/api/v1/health", tags=["health"])
 async def api_health() -> Dict[str, str]:
     """API-level health check endpoint."""
     return {"status": "ok", "version": "1.0.0"}
+
+app.include_router(
+    search_router,
+    prefix="/api/v1"
+)
