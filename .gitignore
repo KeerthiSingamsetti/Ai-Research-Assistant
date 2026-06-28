@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+logs/
+uploads/
+*.db
+test_key.py
