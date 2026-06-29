@@ -1,41 +1,57 @@
-from google import genai
+import asyncio
+import google.generativeai as genai
 
 from backend.config import settings
 
 
 class GeminiService:
-    """
-    Gemini API wrapper using the new google-genai SDK.
-    """
 
     def __init__(self):
 
-        self.client = genai.Client(
+        print("Gemini API Key:", settings.GEMINI_API_KEY)
+
+        genai.configure(
             api_key=settings.GEMINI_API_KEY
+        )
+
+        self.model = genai.GenerativeModel(
+            "gemini-2.5-flash"
         )
 
     async def generate(
         self,
-        prompt: str
+        prompt: str,
+        retries: int = 3
     ) -> str:
 
-        try:
+        for attempt in range(retries):
 
-            response = self.client.models.generate_content(
-                model=settings.MODEL_NAME,
-                contents=prompt
-            )
+            try:
 
-            if response and response.text:
-                return response.text.strip()
+                response = self.model.generate_content(
+                    prompt
+                )
 
-            return "No response generated."
+                text = response.text.strip()
 
-        except Exception as e:
+                if text:
+                    return text
 
-            return (
-                f"Generation error: {str(e)}"
-            )
+            except Exception as e:
+
+                print(
+                    f"GEMINI ERROR (Attempt {attempt + 1}):",
+                    str(e)
+                )
+
+                if attempt == retries - 1:
+                    return (
+                        f"Gemini Error: {str(e)}"
+                    )
+
+                await asyncio.sleep(1)
+
+        return "Failed to generate answer."
 
 
 gemini_service = GeminiService()

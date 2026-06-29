@@ -1,7 +1,18 @@
-.env
+# Python
 __pycache__/
 *.pyc
-logs/
-uploads/
+
+# Environment
+.env
+
+# Database
 *.db
-test_key.py
+
+# Logs
+logs/*.log
+
+# Uploads
+uploads/*.pdf
+
+# VS Code
+.vscode/

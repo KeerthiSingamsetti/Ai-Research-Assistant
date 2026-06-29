@@ -3,32 +3,25 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class ChatRequest(BaseModel):
-    """
-    Incoming user query.
-    """
-
-    query: str = Field(
-        ...,
-        min_length=1,
-        description="Question asked by the user."
-    )
-
-
 class Citation(BaseModel):
-    """
-    Source citation attached to an answer.
-    """
-
     page: int
     section: Optional[str] = None
 
 
-class ChatResponse(BaseModel):
-    """
-    Final response returned to frontend.
-    """
+class Evaluation(BaseModel):
+    evaluation_score: float
+    faithfulness: float
+    citation_count: int
 
+
+class ChatRequest(BaseModel):
+    query: str = Field(
+        ...,
+        min_length=1
+    )
+
+
+class ChatResponse(BaseModel):
     answer: str
 
     confidence: float = Field(
@@ -38,3 +31,5 @@ class ChatResponse(BaseModel):
     )
 
     citations: List[Citation]
+
+    evaluation: Evaluation
