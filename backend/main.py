@@ -13,6 +13,9 @@ from backend.utils.logger import setup_logger
 
 from backend.api.routes.search import router as search_router
 from backend.services.index_builder import build_index
+from backend.api.routes.chat import (
+    router as chat_router
+)
 
 
 logger = setup_logger("main")
@@ -122,5 +125,10 @@ async def api_health() -> Dict[str, str]:
 
 app.include_router(
     search_router,
+    prefix="/api/v1"
+)
+
+app.include_router(
+    chat_router,
     prefix="/api/v1"
 )

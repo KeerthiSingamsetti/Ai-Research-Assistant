@@ -12,4 +12,6 @@ httpx
 sentence-transformers
 faiss-cpu
 rank-bm25
+google-generativeai
+python-dotenv
 
