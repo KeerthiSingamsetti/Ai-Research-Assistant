@@ -13,7 +13,7 @@ from backend.services.bm25_store import (
     build_bm25
 )
 
-
+print("\n========== BUILD INDEX STARTED ==========\n")
 async def build_index():
     """
     Build all retrieval indexes at application startup.
@@ -31,6 +31,7 @@ async def build_index():
         )
 
         chunks = result.scalars().all()
+        print("Chunks loaded from DB:", len(chunks))
 
         if not chunks:
             print("No chunks found to index.")
