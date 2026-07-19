@@ -7,15 +7,8 @@ from backend.services.embedding_service import (
     generate_embedding
 )
 
-from backend.services.vector_store import (
-    search_embeddings,
-    chunk_lookup
-)
-
-from backend.services.bm25_store import (
-    search_bm25,
-    chunk_ids
-)
+import backend.services.vector_store as vector_store
+import backend.services.bm25_store as bm25_store
 
 from backend.services.reranker import (
     rerank
@@ -74,7 +67,7 @@ async def retrieve_chunks(
 
     timer.start("faiss_time_ms")
 
-    distances, indices = search_embeddings(
+    distances, indices = vector_store.search_embeddings(
         query_embedding,
          RETRIEVAL_TOP_K
     )
@@ -95,7 +88,7 @@ async def retrieve_chunks(
 
     timer.start("bm25_time_ms")
 
-    bm25_results = search_bm25(
+    bm25_results = bm25_store.search_bm25(
         query,
          RETRIEVAL_TOP_K
     )
@@ -109,6 +102,19 @@ async def retrieve_chunks(
     # Merge Candidate Chunk IDs
     # ----------------------------------
 
+    print("\n========== INDEX STATUS ==========")
+    print("FAISS total vectors:", len(vector_store.chunk_lookup))
+    print("BM25 total chunks :", len(bm25_store.chunk_ids))
+    print("chunk_lookup =", vector_store.chunk_lookup)
+    print("chunk_ids =", bm25_store.chunk_ids)
+    print("==================================")
+
+
+    print("\n========== RETRIEVER STATUS ==========")
+    print("FAISS lookup size   :", len(vector_store.chunk_lookup))
+    print("BM25 chunk_ids size :", len(bm25_store.chunk_ids))
+    print("======================================")
+
     candidate_chunk_ids = []
     seen = set()
 
@@ -121,9 +127,9 @@ async def retrieve_chunks(
         if idx == -1:
             continue
 
-        if idx in chunk_lookup:
+        if idx in vector_store.chunk_lookup:
 
-            chunk_id = chunk_lookup[idx]
+            chunk_id = vector_store.chunk_lookup[idx]
 
             if chunk_id not in seen:
                 seen.add(chunk_id)
@@ -135,10 +141,10 @@ async def retrieve_chunks(
 
     for idx in bm25_results:
 
-        if idx >= len(chunk_ids):
+        if idx >= len(bm25_store.chunk_ids):
             continue
 
-        chunk_id = chunk_ids[idx]
+        chunk_id = bm25_store.chunk_ids[idx]
 
         if chunk_id not in seen:
             seen.add(chunk_id)
@@ -228,7 +234,7 @@ async def retrieve_chunks(
 
     timer.stop("cross_encoder_time_ms")
 
-    results = results[:5]
+    results = results[:8]
 
     print(f"Retrieved After Reranking: {len(results)}")
 

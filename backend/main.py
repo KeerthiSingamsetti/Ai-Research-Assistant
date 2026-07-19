@@ -13,9 +13,15 @@ from backend.utils.logger import setup_logger
 
 from backend.api.routes.search import router as search_router
 from backend.services.index_builder import build_index
-from backend.api.routes.chat import (
-    router as chat_router
-)
+
+
+#newly added 
+from backend.api.routes.test_document import router as test_router
+
+
+#from backend.api.routes.chat import (
+#    router as chat_router
+#)
 
 
 logger = setup_logger("main")
@@ -68,6 +74,7 @@ async def startup_event() -> None:
 # 3. Mount routers under /api/v1
 # This mounts documents_router (which has prefix /documents) under /api/v1
 # Making the endpoints accessible at /api/v1/documents/...
+
 app.include_router(documents_router, prefix="/api/v1")
 
 # 4. Global Exception Handlers returning JSON errors
@@ -128,7 +135,15 @@ app.include_router(
     prefix="/api/v1"
 )
 
+#app.include_router(
+#    chat_router,
+#   prefix="/api/v1"
+#)
+
+#newly added
+
+
 app.include_router(
-    chat_router,
+    test_router,
     prefix="/api/v1"
 )
