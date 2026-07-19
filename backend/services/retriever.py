@@ -25,6 +25,10 @@ from backend.services.confidence import (
     compute_confidence
 )
 
+from backend.services.performance_metrics import (
+    PerformanceTimer
+)
+
 
 async def retrieve_chunks(
     query: str,
@@ -45,20 +49,39 @@ async def retrieve_chunks(
     print("\n========== RETRIEVAL START ==========")
     print("Query:", query)
 
+    timer = PerformanceTimer()
+
     # ----------------------------------
     # Generate Query Embedding
     # ----------------------------------
 
+    timer.start("embedding_time_ms")
+
     query_embedding = generate_embedding(query)
+
+    timer.stop("embedding_time_ms")
 
     # ----------------------------------
     # FAISS Retrieval
     # ----------------------------------
 
+    # Retrieve more candidates than the final output
+    RETRIEVAL_TOP_K = 20
+    #FASSI_TOP_K = 3
+    #BM25_TOP_K = 20
+    #FINAL_TOP_K = 20
+
+
+    timer.start("faiss_time_ms")
+
     distances, indices = search_embeddings(
         query_embedding,
-        top_k 
+         RETRIEVAL_TOP_K
     )
+
+    timer.stop("faiss_time_ms")
+
+
 
     print("\nFAISS Indices:")
     print(indices)
@@ -70,10 +93,14 @@ async def retrieve_chunks(
     # BM25 Retrieval
     # ----------------------------------
 
+    timer.start("bm25_time_ms")
+
     bm25_results = search_bm25(
         query,
-        top_k 
+         RETRIEVAL_TOP_K
     )
+
+    timer.stop("bm25_time_ms")
 
     print("\nBM25 Indices:")
     print(bm25_results)
@@ -82,28 +109,42 @@ async def retrieve_chunks(
     # Merge Candidate Chunk IDs
     # ----------------------------------
 
-    candidate_chunk_ids = set()
+    candidate_chunk_ids = []
+    seen = set()
 
+    # -------------------------
     # FAISS Candidates
+    # -------------------------
+
     for idx in indices[0]:
 
         if idx == -1:
             continue
 
         if idx in chunk_lookup:
-            candidate_chunk_ids.add(
-                chunk_lookup[idx]
-            )
 
+            chunk_id = chunk_lookup[idx]
+
+            if chunk_id not in seen:
+                seen.add(chunk_id)
+                candidate_chunk_ids.append(chunk_id)
+
+    # -------------------------
     # BM25 Candidates
+    # -------------------------
+
     for idx in bm25_results:
 
-        if idx < len(chunk_ids):
-            candidate_chunk_ids.add(
-                chunk_ids[idx]
-            )
+        if idx >= len(chunk_ids):
+            continue
 
-    print("\nCandidate Chunk IDs:")
+        chunk_id = chunk_ids[idx]
+
+        if chunk_id not in seen:
+            seen.add(chunk_id)
+            candidate_chunk_ids.append(chunk_id)
+
+    print("\nMerged Candidate Chunk IDs:")
     print(candidate_chunk_ids)
 
     # ----------------------------------
@@ -151,7 +192,7 @@ async def retrieve_chunks(
             print("Section Title      :", chunk.section_title)
 
             print("Chunk Preview:")
-            print(chunk.text[:200])
+            print(chunk.text[:300])
             print()
 
             results.append(
@@ -165,19 +206,29 @@ async def retrieve_chunks(
                     "text": chunk.text
                 }
             )
+   
+
+    ##newly added part
 
     print(f"\nRetrieved Before Reranking: {len(results)}")
+
+    # Limit the number of candidates before reranking
+    #results = results[:10]      # You can choose 3, 5, or 10
 
     # ----------------------------------
     # Cross Encoder Reranking
     # ----------------------------------
+
+    timer.start("cross_encoder_time_ms")
 
     results = rerank(
         query,
         results
     )
 
-    results = results[:top_k]
+    timer.stop("cross_encoder_time_ms")
+
+    results = results[:5]
 
     print(f"Retrieved After Reranking: {len(results)}")
 
@@ -189,10 +240,30 @@ async def retrieve_chunks(
         results
     )
 
+    # ----------------------------------
+    # Performance Metrics
+    # ----------------------------------
+
+    metrics = timer.get_metrics()
+
+    metrics["total_retrieval_time_ms"] = round(
+        metrics["embedding_time_ms"]
+        + metrics["faiss_time_ms"]
+        + metrics["bm25_time_ms"]
+        + metrics["cross_encoder_time_ms"],
+        2
+    )
+
+    print("\n========== PERFORMANCE METRICS ==========")
+
+    for key, value in metrics.items():
+        print(f"{key:<30}: {value:.2f} ms")
+
     print("\nConfidence:", confidence)
     print("========== RETRIEVAL END ==========\n")
 
     return {
         "confidence": confidence,
-        "chunks": results
+        "chunks": results,
+        "performance_metrics": metrics
     }
