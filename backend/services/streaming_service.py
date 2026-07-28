@@ -1,14 +1,15 @@
 import asyncio
+import re
 
 async def stream_answer(answer: str):
 
-    words = answer.split()
+    sentences = re.split(r'(?<=[.!?])\s+', answer)
 
-    for word in words:
+    for sentence in sentences:
 
         yield {
             "event": "message",
-            "data": word + " "
+            "data": sentence
         }
 
         await asyncio.sleep(0.05)

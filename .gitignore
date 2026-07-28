@@ -1,18 +1,28 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Environment
 .env
+venv/
+.venv/
 
 # Database
 *.db
 
 # Logs
 logs/*.log
+logs/chat_history.json
 
 # Uploads
-uploads/*.pdf
+uploads/
+*.pdf
 
 # VS Code
 .vscode/
+
+# OS Files
+.DS_Store
+Thumbs.db

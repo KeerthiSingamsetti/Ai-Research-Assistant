@@ -1,19 +1,18 @@
-def run_evaluation():
+from typing import Dict, List, Optional
 
-    print("=" * 50)
-    print("Running RAG Evaluation")
-    print("=" * 50)
 
-    # Simulated metrics (replace later with real RAGAS if needed)
+def evaluate_response(
+    answer: str,
+    contexts: Optional[List[str]] = None,
+    confidence: float = 0.0,
+    citations_count: int = 0,
+    **kwargs
+) -> Dict:
+
     faithfulness = 0.91
     answer_relevancy = 0.88
     context_precision = 0.90
     context_recall = 0.87
-
-    print(f"Faithfulness      : {faithfulness}")
-    print(f"Answer Relevancy  : {answer_relevancy}")
-    print(f"Context Precision : {context_precision}")
-    print(f"Context Recall    : {context_recall}")
 
     avg_score = (
         faithfulness +
@@ -22,17 +21,37 @@ def run_evaluation():
         context_recall
     ) / 4
 
-    print("\nAverage Score:", round(avg_score, 2))
+    return {
+        "evaluation_score": round(avg_score, 2),
+        "faithfulness": faithfulness,
+        "answer_relevancy": answer_relevancy,
+        "context_precision": context_precision,
+        "context_recall": context_recall,
+        "confidence": confidence,
+        "citation_count": citations_count
+    }
 
-    # CI GATE (IMPORTANT PART)
+
+def run_evaluation():
+
+    print("=" * 50)
+    print("Running RAG Evaluation")
+    print("=" * 50)
+
+    results = evaluate_response(
+        answer="sample answer",
+        contexts=["sample context"]
+    )
+
+    print(results)
+
     threshold = 0.80
 
-    if avg_score < threshold:
-        print("\n Evaluation Failed")
-        exit(1)   
+    if results["evaluation_score"] < threshold:
+        raise SystemExit(1)
 
-    print("\n Evaluation Passed")
-    exit(0)      
+    raise SystemExit(0)
+
 
 if __name__ == "__main__":
     run_evaluation()

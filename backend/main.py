@@ -19,9 +19,9 @@ from backend.services.index_builder import build_index
 from backend.api.routes.test_document import router as test_router
 
 
-#from backend.api.routes.chat import (
-#    router as chat_router
-#)
+from backend.api.routes.chat import (
+    router as chat_router
+)
 
 
 logger = setup_logger("main")
@@ -135,10 +135,10 @@ app.include_router(
     prefix="/api/v1"
 )
 
-#app.include_router(
-#    chat_router,
-#   prefix="/api/v1"
-#)
+app.include_router(
+    chat_router,
+   prefix="/api/v1"
+)
 
 #newly added
 
